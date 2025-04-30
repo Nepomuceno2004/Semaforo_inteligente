@@ -31,7 +31,10 @@ pico_sdk_init()
 
 include_directories(${CMAKE_SOURCE_DIR}/lib)
 
-add_executable(Semaforo_inteligente Semaforo_inteligente.c )
+        add_executable(Semaforo_inteligente 
+        Semaforo_inteligente.c 
+        lib/ssd1306.c # Biblioteca para o display OLED
+        )
 
 pico_set_program_name(Semaforo_inteligente "Semaforo_inteligente")
 pico_set_program_version(Semaforo_inteligente "0.1")
@@ -50,6 +53,7 @@ target_link_libraries(Semaforo_inteligente
         FreeRTOS-Kernel-Heap4
         hardware_pio
         hardware_pwm
+        hardware_i2c
         )
 
 target_include_directories(Semaforo_inteligente PRIVATE

@@ -3,21 +3,29 @@
 #include "task.h"
 #include <stdio.h>
 #include "pico/stdlib.h"
-#include "hardware/pio.h"
 #include "hardware/pwm.h"
+#include "hardware/pio.h"
 #include "generated/ws2812.pio.h"
+#include "hardware/i2c.h"
+#include "lib/ssd1306.h"
+#include "lib/font.h"
 
 #define ledVerde 11
 #define ledBlue 12
 #define ledVermelho 13
+
 #define botaoA 5
+
+#define I2C_PORT i2c1
+#define I2C_SDA 14
+#define I2C_SCL 15
+#define endereco 0x3C
 
 // pinos da matriz de led
 #define IS_RGBW false
 #define NUM_PIXELS 25
 #define WS2812_PIN 7
 
-volatile uint32_t last_time = 0;
 volatile bool modoNoturno = false;
 
 bool leds_Aceso[NUM_PIXELS] = {
@@ -27,23 +35,12 @@ bool leds_Aceso[NUM_PIXELS] = {
     1, 1, 1, 1, 1,
     0, 1, 1, 1, 0};
 
+// ativar modo bootcel a partir o botão B
 #include "pico/bootrom.h"
 #define botaoB 6
 void gpio_irq_handler(uint gpio, uint32_t events)
 {
-    uint32_t current_time = to_us_since_boot(get_absolute_time());
-    if (current_time - last_time > 200000)
-    {
-        if (gpio == botaoA)
-        {
-            modoNoturno = !modoNoturno;
-        }
-        else
-        {
-            reset_usb_boot(0, 0);
-        }
-        last_time = current_time;
-    }
+    reset_usb_boot(0, 0);
 }
 
 static inline void put_pixel(uint32_t pixel_grb)
@@ -77,7 +74,31 @@ void set_one_led(uint8_t r, uint8_t g, uint8_t b, bool led_buffer[])
     }
 }
 
-void vMatriz()
+void vBotaoA()
+{
+    gpio_init(botaoA);
+    gpio_set_dir(botaoA, GPIO_IN);
+    gpio_pull_up(botaoA);
+
+    while (true)
+    {
+        if (!gpio_get(botaoA))
+        {
+            modoNoturno = !modoNoturno;
+
+            // Aguarda o botão ser solto
+            while (!gpio_get(botaoA))
+            {
+                vTaskDelay(pdMS_TO_TICKS(10));
+            }
+
+            // Pequeno atraso para debounce
+            vTaskDelay(pdMS_TO_TICKS(50));
+        }
+    }
+}
+
+void vMatrizTask()
 {
     // inicialização da matriz de led
     PIO pio = pio0;
@@ -89,27 +110,28 @@ void vMatriz()
     {
         if (!modoNoturno)
         {
-            set_one_led(0, 2, 0, leds_Aceso); // manda o símbolo para a matriz de led
+            set_one_led(0, 2, 0, leds_Aceso); // manda a cor verde para a matriz de led
             vTaskDelay(pdMS_TO_TICKS(3000));
-            set_one_led(2, 2, 0, leds_Aceso); // manda o símbolo para a matriz de led
+            set_one_led(2, 2, 0, leds_Aceso); // manda a cor amarela para a matriz de led
             vTaskDelay(pdMS_TO_TICKS(2000));
-            set_one_led(2, 0, 0, leds_Aceso); // manda o símbolo para a matriz de led
+            set_one_led(2, 0, 0, leds_Aceso); // manda a cor vermelha para a matriz de led
             vTaskDelay(pdMS_TO_TICKS(3000));
         }
         else
         {
-            set_one_led(2, 2, 0, leds_Aceso); // manda o símbolo para a matriz de led
+            set_one_led(2, 2, 0, leds_Aceso); // manda a cor vermelha para a matriz de led
             vTaskDelay(pdMS_TO_TICKS(1000));
             for (int i = 0; i < NUM_PIXELS; i++)
             {
-                put_pixel(0); // Desliga os LEDs com zero no buffer
-            }   
+                put_pixel(0); // Desliga todos LEDs
+            }
             vTaskDelay(pdMS_TO_TICKS(1000));
         }
     }
 }
 
-void vSemaforo()
+
+void vSemaforoTask()
 {
     gpio_init(ledVerde);
     gpio_set_dir(ledVerde, GPIO_OUT);
@@ -146,11 +168,6 @@ void vSemaforo()
 
 int main()
 {
-    gpio_init(botaoA);
-    gpio_set_dir(botaoA, GPIO_IN);
-    gpio_pull_up(botaoA);
-    gpio_set_irq_enabled_with_callback(botaoA, GPIO_IRQ_EDGE_FALL, true, &gpio_irq_handler);
-
     gpio_init(botaoB);
     gpio_set_dir(botaoB, GPIO_IN);
     gpio_pull_up(botaoB);
@@ -158,10 +175,13 @@ int main()
 
     stdio_init_all();
 
-    xTaskCreate(vSemaforo, "Semaforo", configMINIMAL_STACK_SIZE,
+    xTaskCreate(vBotaoA, "Display Task", configMINIMAL_STACK_SIZE,
                 NULL, tskIDLE_PRIORITY, NULL);
 
-    xTaskCreate(vMatriz, "Matriz", configMINIMAL_STACK_SIZE,
+    xTaskCreate(vSemaforoTask, "Semaforo Task", configMINIMAL_STACK_SIZE,
+                NULL, tskIDLE_PRIORITY, NULL);
+
+    xTaskCreate(vMatrizTask, "Matriz Task", configMINIMAL_STACK_SIZE,
                 NULL, tskIDLE_PRIORITY, NULL);
 
     vTaskStartScheduler();
