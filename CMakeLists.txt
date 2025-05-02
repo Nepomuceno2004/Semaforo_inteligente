@@ -35,6 +35,7 @@ include_directories(${CMAKE_SOURCE_DIR}/lib)
         Semaforo_inteligente.c 
         lib/ssd1306.c # Biblioteca para o display OLED
         lib/matrizLed.c
+        lib/buzzer.c
         )
 
 pico_set_program_name(Semaforo_inteligente "Semaforo_inteligente")

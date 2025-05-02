@@ -10,6 +10,7 @@
 #include "lib/ssd1306.h"
 #include "lib/font.h"
 #include "lib/matrizLed.h"
+#include "buzzer.h"
 
 #define ledVerde 11
 #define ledBlue 12
@@ -19,8 +20,9 @@
 
 // pinos da matriz de led
 #define IS_RGBW false
-#define NUM_PIXELS 25
 #define WS2812_PIN 7
+
+#define BUZZER_PIN 21
 
 volatile bool modoNoturno = false;
 ssd1306_t ssd; // Inicializa a estrutura do display
@@ -40,7 +42,7 @@ void gpio_irq_handler(uint gpio, uint32_t events)
     reset_usb_boot(0, 0);
 }
 
-void vBotaoA()
+void vBotaoATask()
 {
     gpio_init(botaoA);
     gpio_set_dir(botaoA, GPIO_IN);
@@ -128,8 +130,31 @@ void vMatrizTask()
     }
 }
 
-void vSemaforoTask()
+void vBuzzerTask()
 {
+
+    buzzer_init(BUZZER_PIN);
+    while (true)
+    {
+        for (int i = 0; i < 3; i++)
+        {
+            modo_verde(BUZZER_PIN);
+        }
+
+        for (int i = 0; i < 2; i++)
+        {
+            modo_amarelo(BUZZER_PIN);
+        }
+
+        for (int i = 0; i < 2; i++)
+        {
+            modo_vermelho(BUZZER_PIN);
+        }
+    }
+}
+void vLedRGBTask()
+{
+
     gpio_init(ledVerde);
     gpio_set_dir(ledVerde, GPIO_OUT);
 
@@ -145,9 +170,12 @@ void vSemaforoTask()
         {
             gpio_put(ledVerde, true);
             vTaskDelay(pdMS_TO_TICKS(3000));
+
             gpio_put(ledVermelho, true);
             vTaskDelay(pdMS_TO_TICKS(2000));
+
             gpio_put(ledVerde, false);
+
             vTaskDelay(pdMS_TO_TICKS(3000));
             gpio_put(ledVermelho, false);
         }
@@ -175,13 +203,16 @@ int main()
     xTaskCreate(vDisplayTask, "Display Task", configMINIMAL_STACK_SIZE,
                 NULL, tskIDLE_PRIORITY, NULL);
 
-    xTaskCreate(vBotaoA, "Botao Task", configMINIMAL_STACK_SIZE,
+    xTaskCreate(vBotaoATask, "Botao Task", configMINIMAL_STACK_SIZE,
                 NULL, tskIDLE_PRIORITY, NULL);
 
-    xTaskCreate(vSemaforoTask, "Semaforo Task", configMINIMAL_STACK_SIZE,
+    xTaskCreate(vLedRGBTask, "Semaforo Task", configMINIMAL_STACK_SIZE,
                 NULL, tskIDLE_PRIORITY, NULL);
 
     xTaskCreate(vMatrizTask, "Matriz Task", configMINIMAL_STACK_SIZE,
+                NULL, tskIDLE_PRIORITY, NULL);
+
+    xTaskCreate(vBuzzerTask, "Buzzer Task", configMINIMAL_STACK_SIZE,
                 NULL, tskIDLE_PRIORITY, NULL);
 
     vTaskStartScheduler();
