@@ -87,7 +87,7 @@ void vDisplayTask()
             ssd1306_fill(&ssd, false);
             desenhar(&ssd, humano);
 
-            vTaskDelay(pdMS_TO_TICKS(2900));
+            vTaskDelay(pdMS_TO_TICKS(3900));
         }
         else
         {
@@ -115,7 +115,7 @@ void vMatrizTask()
             set_one_led(2, 2, 0, leds_Aceso); // manda a cor amarela para a matriz de led
             vTaskDelay(pdMS_TO_TICKS(2000));
             set_one_led(2, 0, 0, leds_Aceso); // manda a cor vermelha para a matriz de led
-            vTaskDelay(pdMS_TO_TICKS(3000));
+            vTaskDelay(pdMS_TO_TICKS(4000));
         }
         else
         {
@@ -152,6 +152,7 @@ void vBuzzerTask()
         }
     }
 }
+
 void vLedRGBTask()
 {
 
@@ -176,7 +177,7 @@ void vLedRGBTask()
 
             gpio_put(ledVerde, false);
 
-            vTaskDelay(pdMS_TO_TICKS(3000));
+            vTaskDelay(pdMS_TO_TICKS(4000));
             gpio_put(ledVermelho, false);
         }
         else
