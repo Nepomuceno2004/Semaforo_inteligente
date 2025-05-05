@@ -32,8 +32,7 @@ bool leds_Aceso[NUM_PIXELS] = {
     1, 1, 1, 1, 1,
     1, 1, 1, 1, 1,
     1, 1, 1, 1, 1,
-    0, 1, 1, 1, 0
-};
+    0, 1, 1, 1, 0};
 
 void vBotaoATask()
 {
@@ -84,9 +83,7 @@ void vDisplayTask()
         }
         else
         {
-            ssd1306_fill(&ssd, false);
             desenhar(&ssd, atencao);
-            vTaskDelay(pdMS_TO_TICKS(1000));
         }
     }
 }
@@ -129,19 +126,26 @@ void vBuzzerTask()
     buzzer_init(BUZZER_PIN);
     while (true)
     {
-        for (int i = 0; i < 3; i++)
+        if (!modoNoturno)
         {
-            modo_verde(BUZZER_PIN);
-        }
+            for (int i = 0; i < 3; i++)
+            {
+                modo_verde(BUZZER_PIN);
+            }
 
-        for (int i = 0; i < 2; i++)
-        {
-            modo_amarelo(BUZZER_PIN);
-        }
+            for (int i = 0; i < 2; i++)
+            {
+                modo_amarelo(BUZZER_PIN);
+            }
 
-        for (int i = 0; i < 2; i++)
+            for (int i = 0; i < 2; i++)
+            {
+                modo_vermelho(BUZZER_PIN);
+            }
+        }
+        else
         {
-            modo_vermelho(BUZZER_PIN);
+            buzzer_noturno(BUZZER_PIN);
         }
     }
 }
