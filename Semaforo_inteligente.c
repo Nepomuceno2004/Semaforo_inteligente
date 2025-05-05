@@ -32,15 +32,8 @@ bool leds_Aceso[NUM_PIXELS] = {
     1, 1, 1, 1, 1,
     1, 1, 1, 1, 1,
     1, 1, 1, 1, 1,
-    0, 1, 1, 1, 0};
-
-// ativar modo bootcel a partir o botão B
-#include "pico/bootrom.h"
-#define botaoB 6
-void gpio_irq_handler(uint gpio, uint32_t events)
-{
-    reset_usb_boot(0, 0);
-}
+    0, 1, 1, 1, 0
+};
 
 void vBotaoATask()
 {
@@ -61,7 +54,7 @@ void vBotaoATask()
             }
 
             // Pequeno atraso para debounce
-            vTaskDelay(pdMS_TO_TICKS(50));
+            vTaskDelay(pdMS_TO_TICKS(150));
         }
     }
 }
@@ -194,23 +187,18 @@ void vLedRGBTask()
 
 int main()
 {
-    gpio_init(botaoB);
-    gpio_set_dir(botaoB, GPIO_IN);
-    gpio_pull_up(botaoB);
-    gpio_set_irq_enabled_with_callback(botaoB, GPIO_IRQ_EDGE_FALL, true, &gpio_irq_handler);
-
     stdio_init_all();
-
-    xTaskCreate(vDisplayTask, "Display Task", configMINIMAL_STACK_SIZE,
-                NULL, tskIDLE_PRIORITY, NULL);
 
     xTaskCreate(vBotaoATask, "Botao Task", configMINIMAL_STACK_SIZE,
                 NULL, tskIDLE_PRIORITY, NULL);
 
-    xTaskCreate(vLedRGBTask, "Semaforo Task", configMINIMAL_STACK_SIZE,
+    xTaskCreate(vLedRGBTask, "Led RGB Task", configMINIMAL_STACK_SIZE,
                 NULL, tskIDLE_PRIORITY, NULL);
 
     xTaskCreate(vMatrizTask, "Matriz Task", configMINIMAL_STACK_SIZE,
+                NULL, tskIDLE_PRIORITY, NULL);
+
+    xTaskCreate(vDisplayTask, "Display Task", configMINIMAL_STACK_SIZE,
                 NULL, tskIDLE_PRIORITY, NULL);
 
     xTaskCreate(vBuzzerTask, "Buzzer Task", configMINIMAL_STACK_SIZE,
