@@ -45,7 +45,7 @@ void modo_verde(uint BUZZER_PIN)
     sleep_ms(900);
 }
 
-// Sinal de atenção – beeps rápidos (3 curtos)
+// Sinal de atenção – beeps rápidos por 1s
 void modo_amarelo(uint BUZZER_PIN)
 {
     for (int i = 0; i < 5; i++)
@@ -60,6 +60,10 @@ void modo_vermelho(uint BUZZER_PIN)
 {
     buzzer_play(BUZZER_PIN, 1000, 500); // Tom de 1000 Hz por 500 ms
     sleep_ms(1500);
+}
+
+void buzzer_noturno(uint BUZZER_PIN){
+
 }
 
 #endif

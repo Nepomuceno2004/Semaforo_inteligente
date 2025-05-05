@@ -9,5 +9,6 @@ void buzzer_play(uint BUZZER_PIN, uint freq, uint duration_ms);
 void modo_verde(uint BUZZER_PIN);    // Pode atravessar
 void modo_amarelo(uint BUZZER_PIN);  // Atenção
 void modo_vermelho(uint BUZZER_PIN); // Não atravesse
+void buzzer_noturno(uint BUZZER_PIN);
 
 #endif
