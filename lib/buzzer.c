@@ -22,7 +22,7 @@ void buzzer_play(uint BUZZER_PIN, uint freq, uint duration_ms)
     // Define o valor máximo do contador PWM (wrap)
     pwm_set_wrap(slice_num, top);
 
-    // Define o duty cycle em 80% para volume alto
+    // Define o duty cycle
     pwm_set_chan_level(slice_num, pwm_gpio_to_channel(BUZZER_PIN), (top * 2) / 10);
 
     // Ativa o PWM
@@ -62,9 +62,10 @@ void modo_vermelho(uint BUZZER_PIN)
     sleep_ms(1500);
 }
 
+// Sinal de alerta noturno – som mais grave e mais longo
 void buzzer_noturno(uint BUZZER_PIN)
 {
-    buzzer_play(BUZZER_PIN, 1000, 1000); // Tom de 1000 Hz por 500 ms
+    buzzer_play(BUZZER_PIN, 2000, 1000); // Tom de 2000 Hz por 1000 ms
     sleep_ms(1000);
 }
 

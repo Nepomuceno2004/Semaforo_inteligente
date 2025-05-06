@@ -12,20 +12,27 @@
 #include "lib/matrizLed.h"
 #include "buzzer.h"
 
+// pinos do led rgb (o led azul não foi necessário)
 #define ledVerde 11
 #define ledVermelho 13
 
+// pino do botão A
 #define botaoA 5
 
 // pinos da matriz de led
 #define IS_RGBW false
 #define WS2812_PIN 7
 
+// pino do buzzer
 #define BUZZER_PIN 21
 
-volatile bool modoNoturno = true;
-ssd1306_t ssd; // Inicializa a estrutura do display
+// flag para alterar os modos (normal/noturno)
+volatile bool modoNoturno = false;
 
+// Inicializa a estrutura do display
+ssd1306_t ssd;
+
+// matriz que define quais leds acendem
 bool leds_Aceso[NUM_PIXELS] = {
     0, 1, 1, 1, 0,
     1, 1, 1, 1, 1,
@@ -33,17 +40,19 @@ bool leds_Aceso[NUM_PIXELS] = {
     1, 1, 1, 1, 1,
     0, 1, 1, 1, 0};
 
+// task que controla o botão
 void vBotaoATask()
 {
+    // inicializa e configura o botão
     gpio_init(botaoA);
     gpio_set_dir(botaoA, GPIO_IN);
     gpio_pull_up(botaoA);
 
     while (true)
     {
-        if (!gpio_get(botaoA))
+        if (!gpio_get(botaoA)) // quando há o pressionamento
         {
-            modoNoturno = !modoNoturno;
+            modoNoturno = !modoNoturno; // altera o modo
 
             // Aguarda o botão ser solto
             while (!gpio_get(botaoA))
@@ -57,34 +66,42 @@ void vBotaoATask()
     }
 }
 
+// task que controla o display
 void vDisplayTask()
 {
-    initDisplay(&ssd);
+    initDisplay(&ssd); // inicializa o display
 
     while (true)
     {
+        ssd1306_fill(&ssd, false); // limpa os pixels
         if (!modoNoturno)
         {
+            desenhar(&ssd, carro);           // envia o desenho do carro
+            vTaskDelay(pdMS_TO_TICKS(2900)); // espera a troca de sinal
             ssd1306_fill(&ssd, false);
-            desenhar(&ssd, carro);
 
-            vTaskDelay(pdMS_TO_TICKS(2950));
-
+            desenhar(&ssd, atencao); // envia o desenho de atenção
+            vTaskDelay(pdMS_TO_TICKS(1900));
             ssd1306_fill(&ssd, false);
-            desenhar(&ssd, atencao);
 
-            vTaskDelay(pdMS_TO_TICKS(1950));
-
-            ssd1306_fill(&ssd, false);
-            desenhar(&ssd, humano);
-
+            desenhar(&ssd, humano); // envia o desenho do humano
             vTaskDelay(pdMS_TO_TICKS(3900));
         }
         else
         {
-            desenhar(&ssd, atencao);
+            desenhar(&ssd, atencao); // envia o desenho de atenção
+            vTaskDelay(pdMS_TO_TICKS(950));
         }
     }
+}
+//função para desligar todos os leds da matriz
+void desligarMatriz()
+{
+    for (int i = 0; i < NUM_PIXELS; i++)
+    {
+        put_pixel(0); // Desliga um LED da matriz por vez
+    }
+    return;
 }
 
 void vMatrizTask()
@@ -100,21 +117,20 @@ void vMatrizTask()
         if (!modoNoturno)
         {
             set_one_led(0, 2, 0, leds_Aceso); // manda a cor verde para a matriz de led
-            vTaskDelay(pdMS_TO_TICKS(3000));
+            vTaskDelay(pdMS_TO_TICKS(3000));  // espera a troca de sinal
+
             set_one_led(2, 2, 0, leds_Aceso); // manda a cor amarela para a matriz de led
             vTaskDelay(pdMS_TO_TICKS(2000));
+
             set_one_led(2, 0, 0, leds_Aceso); // manda a cor vermelha para a matriz de led
             vTaskDelay(pdMS_TO_TICKS(4000));
         }
         else
         {
             set_one_led(2, 2, 0, leds_Aceso); // manda a cor amarela para a matriz de led
-            vTaskDelay(pdMS_TO_TICKS(1000));
-            for (int i = 0; i < NUM_PIXELS; i++)
-            {
-                put_pixel(0); // Desliga todos LEDs
-            }
-            vTaskDelay(pdMS_TO_TICKS(1000));
+            vTaskDelay(pdMS_TO_TICKS(950));
+            desligarMatriz(); // desliga todos os leds
+            vTaskDelay(pdMS_TO_TICKS(950));
         }
     }
 }
@@ -122,29 +138,30 @@ void vMatrizTask()
 void vBuzzerTask()
 {
 
-    buzzer_init(BUZZER_PIN);
+    buzzer_init(BUZZER_PIN); // inicializa o buzzer
+
     while (true)
     {
         if (!modoNoturno)
         {
             for (int i = 0; i < 3; i++)
             {
-                modo_verde(BUZZER_PIN);
+                modo_verde(BUZZER_PIN); // envia o tom do sinal verde
             }
 
             for (int i = 0; i < 2; i++)
             {
-                modo_amarelo(BUZZER_PIN);
+                modo_amarelo(BUZZER_PIN); // envia o tom do sinal amarelo
             }
 
             for (int i = 0; i < 2; i++)
             {
-                modo_vermelho(BUZZER_PIN);
+                modo_vermelho(BUZZER_PIN); // envia o tom do sinal vermelho
             }
         }
         else
         {
-            buzzer_noturno(BUZZER_PIN);
+            buzzer_noturno(BUZZER_PIN); // envia o tom do sinal amarelo no modo noturno
         }
     }
 }
@@ -152,6 +169,7 @@ void vBuzzerTask()
 void vLedRGBTask()
 {
 
+    // inicializa os leds
     gpio_init(ledVerde);
     gpio_set_dir(ledVerde, GPIO_OUT);
 
@@ -162,25 +180,29 @@ void vLedRGBTask()
     {
         if (!modoNoturno)
         {
-            gpio_put(ledVerde, true);
-            vTaskDelay(pdMS_TO_TICKS(3000));
+            gpio_put(ledVerde, true);        // liga o verde
+            vTaskDelay(pdMS_TO_TICKS(3000)); // espera a troca de sinal
 
-            gpio_put(ledVermelho, true);
+            gpio_put(ledVermelho, true); // liga o vermelho para formar amarelo
             vTaskDelay(pdMS_TO_TICKS(2000));
 
-            gpio_put(ledVerde, false);
+            gpio_put(ledVerde, false); // desliga o verde para ficar apenas o vermelho
 
             vTaskDelay(pdMS_TO_TICKS(4000));
-            gpio_put(ledVermelho, false);
+
+            gpio_put(ledVermelho, false); // desliga o vermelho
         }
         else
         {
+            // verde + amarelo para formar amarelo
             gpio_put(ledVerde, true);
             gpio_put(ledVermelho, true);
-            vTaskDelay(pdMS_TO_TICKS(1000));
+            vTaskDelay(pdMS_TO_TICKS(950)); // espera a troca de sinal
+
+            // desliga os leds
             gpio_put(ledVerde, false);
             gpio_put(ledVermelho, false);
-            vTaskDelay(pdMS_TO_TICKS(1000));
+            vTaskDelay(pdMS_TO_TICKS(950));
         }
     }
 }
@@ -192,13 +214,13 @@ int main()
     xTaskCreate(vBotaoATask, "Botao Task", configMINIMAL_STACK_SIZE,
                 NULL, tskIDLE_PRIORITY, NULL);
 
-    xTaskCreate(vLedRGBTask, "Led RGB Task", configMINIMAL_STACK_SIZE,
-                NULL, tskIDLE_PRIORITY, NULL);
-
     xTaskCreate(vMatrizTask, "Matriz Task", configMINIMAL_STACK_SIZE,
                 NULL, tskIDLE_PRIORITY, NULL);
 
     xTaskCreate(vDisplayTask, "Display Task", configMINIMAL_STACK_SIZE,
+                NULL, tskIDLE_PRIORITY, NULL);
+
+    xTaskCreate(vLedRGBTask, "Led RGB Task", configMINIMAL_STACK_SIZE,
                 NULL, tskIDLE_PRIORITY, NULL);
 
     xTaskCreate(vBuzzerTask, "Buzzer Task", configMINIMAL_STACK_SIZE,
