@@ -13,7 +13,6 @@
 #include "buzzer.h"
 
 #define ledVerde 11
-#define ledBlue 12
 #define ledVermelho 13
 
 #define botaoA 5
@@ -24,7 +23,7 @@
 
 #define BUZZER_PIN 21
 
-volatile bool modoNoturno = false;
+volatile bool modoNoturno = true;
 ssd1306_t ssd; // Inicializa a estrutura do display
 
 bool leds_Aceso[NUM_PIXELS] = {
@@ -155,9 +154,6 @@ void vLedRGBTask()
 
     gpio_init(ledVerde);
     gpio_set_dir(ledVerde, GPIO_OUT);
-
-    gpio_init(ledBlue);
-    gpio_set_dir(ledBlue, GPIO_OUT);
 
     gpio_init(ledVermelho);
     gpio_set_dir(ledVermelho, GPIO_OUT);

@@ -62,8 +62,10 @@ void modo_vermelho(uint BUZZER_PIN)
     sleep_ms(1500);
 }
 
-void buzzer_noturno(uint BUZZER_PIN){
-
+void buzzer_noturno(uint BUZZER_PIN)
+{
+    buzzer_play(BUZZER_PIN, 1000, 1000); // Tom de 1000 Hz por 500 ms
+    sleep_ms(1000);
 }
 
 #endif
